@@ -1,0 +1,53 @@
+[
+	{ "label": "Point: valid", "geometry": { "type": "Point", "coordinates": [12.4964, 41.9028] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "Point: with altitude", "geometry": { "type": "Point", "coordinates": [12.4964, 41.9028, 21.0] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "Point: coordinates is a string", "geometry": { "type": "Point", "coordinates": "banana" }, "expect": { "ok": false, "codes": ["BAD_POSITION"] } },
+	{ "label": "Point: one element", "geometry": { "type": "Point", "coordinates": [12.4964] }, "expect": { "ok": false, "codes": ["BAD_POSITION"] } },
+	{ "label": "Point: four elements", "geometry": { "type": "Point", "coordinates": [1, 2, 3, 4] }, "expect": { "ok": false, "codes": ["BAD_POSITION"] } },
+	{ "label": "Point: non-numeric element", "geometry": { "type": "Point", "coordinates": [12.4964, "41.9"] }, "expect": { "ok": false, "codes": ["BAD_POSITION"] } },
+	{ "label": "Point: longitude out of range", "geometry": { "type": "Point", "coordinates": [200, 41.9] }, "expect": { "ok": false, "codes": ["LON_OUT_OF_RANGE"] } },
+	{ "label": "Point: latitude out of range (lat/lon swapped)", "geometry": { "type": "Point", "coordinates": [41.9, 191.4] }, "expect": { "ok": false, "codes": ["LAT_OUT_OF_RANGE"] } },
+	{ "label": "Point: missing coordinates", "geometry": { "type": "Point" }, "expect": { "ok": false, "codes": ["MISSING_COORDINATES"] } },
+
+	{ "label": "envelope: not an object", "geometry": "Point", "expect": { "ok": false, "codes": ["NOT_AN_OBJECT"] } },
+	{ "label": "envelope: null", "geometry": null, "expect": { "ok": false, "codes": ["NOT_AN_OBJECT"] } },
+	{ "label": "envelope: unknown type", "geometry": { "type": "Circle", "coordinates": [0, 0] }, "expect": { "ok": false, "codes": ["UNKNOWN_TYPE"] } },
+	{ "label": "envelope: Feature is not a geometry", "geometry": { "type": "Feature", "geometry": { "type": "Point", "coordinates": [0, 0] } }, "expect": { "ok": false, "codes": ["UNKNOWN_TYPE"] } },
+
+	{ "label": "MultiPoint: valid", "geometry": { "type": "MultiPoint", "coordinates": [[0, 0], [1, 1]] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "MultiPoint: empty", "geometry": { "type": "MultiPoint", "coordinates": [] }, "expect": { "ok": false, "codes": ["EMPTY_COORDINATES"] } },
+
+	{ "label": "LineString: valid", "geometry": { "type": "LineString", "coordinates": [[0, 0], [1, 1]] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "LineString: single position", "geometry": { "type": "LineString", "coordinates": [[0, 0]] }, "expect": { "ok": false, "codes": ["LINESTRING_TOO_SHORT"] } },
+	{ "label": "MultiLineString: valid", "geometry": { "type": "MultiLineString", "coordinates": [[[0, 0], [1, 1]], [[2, 2], [3, 3]]] }, "expect": { "ok": true, "codes": [] } },
+
+	{ "label": "Polygon: valid counter-clockwise square", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "Polygon: clockwise exterior ring", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] }, "expect": { "ok": false, "codes": ["EXTERIOR_NOT_CCW"] } },
+	{ "label": "Polygon: ring not closed", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1]]] }, "expect": { "ok": false, "codes": ["RING_NOT_CLOSED"] } },
+	{ "label": "Polygon: ring too short", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [1, 1], [0, 0]]] }, "expect": { "ok": false, "codes": ["RING_TOO_SHORT"] } },
+	{ "label": "Polygon: duplicate consecutive position (tolerated by ArangoDB)", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [0, 0], [1, 0], [1, 1], [0, 0]]] }, "expect": { "ok": true, "codes": ["RING_DUPLICATE_POSITION"] } },
+	{ "label": "Polygon: self-intersecting bowtie (zero net area)", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] }, "expect": { "ok": false, "codes": ["RING_SELF_INTERSECTS"] } },
+	{ "label": "Polygon: self-intersecting bowtie (asymmetric)", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [4, 4], [4, 0], [0, 3], [0, 0]]] }, "expect": { "ok": false, "codes": ["RING_SELF_INTERSECTS"] } },
+	{ "label": "Polygon: collinear ring encloses no area", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [1, 1], [2, 2], [0, 0]]] }, "expect": { "ok": false, "codes": ["RING_SPIKE", "RING_DEGENERATE"] } },
+	{ "label": "Polygon: coordinates is a string", "geometry": { "type": "Polygon", "coordinates": "banana" }, "expect": { "ok": false, "codes": ["BAD_NESTING"] } },
+	{ "label": "Polygon: ring is a flat number array", "geometry": { "type": "Polygon", "coordinates": [[0, 0, 1, 0, 1, 1, 0, 0]] }, "expect": { "ok": false, "codes": ["BAD_POSITION"] } },
+	{ "label": "Polygon: no rings", "geometry": { "type": "Polygon", "coordinates": [] }, "expect": { "ok": false, "codes": ["EMPTY_COORDINATES"] } },
+
+	{ "label": "Polygon: valid with clockwise hole", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], [[2, 2], [2, 4], [4, 4], [4, 2], [2, 2]]] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "Polygon: counter-clockwise hole (ArangoDB inverts it)", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], [[2, 2], [4, 2], [4, 4], [2, 4], [2, 2]]] }, "expect": { "ok": true, "codes": ["HOLE_NOT_CW"] } },
+	{ "label": "Polygon: hole outside exterior ring", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]], [[5, 5], [5, 6], [6, 6], [6, 5], [5, 5]]] }, "expect": { "ok": false, "codes": ["HOLE_NOT_INSIDE_EXTERIOR"] } },
+	{ "label": "Polygon: hole crosses exterior ring", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], [[8, 8], [8, 12], [12, 12], [12, 8], [8, 8]]] }, "expect": { "ok": false, "codes": ["HOLE_CROSSES_EXTERIOR"] } },
+	{ "label": "Polygon: two crossing holes", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [20, 0], [20, 20], [0, 20], [0, 0]], [[2, 2], [2, 8], [8, 8], [8, 2], [2, 2]], [[6, 6], [6, 12], [12, 12], [12, 6], [6, 6]]] }, "expect": { "ok": false, "codes": ["HOLES_OVERLAP"] } },
+	{ "label": "Polygon: two holes touching at a vertex (ArangoDB accepts)", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [20, 0], [20, 20], [0, 20], [0, 0]], [[2, 2], [2, 6], [6, 6], [6, 2], [2, 2]], [[6, 6], [6, 10], [10, 10], [10, 6], [6, 6]]] }, "expect": { "ok": true, "codes": ["HOLES_TOUCH"] } },
+	{ "label": "Polygon: two disjoint holes", "geometry": { "type": "Polygon", "coordinates": [[[0, 0], [20, 0], [20, 20], [0, 20], [0, 0]], [[2, 2], [2, 4], [4, 4], [4, 2], [2, 2]], [[10, 10], [10, 12], [12, 12], [12, 10], [10, 10]]] }, "expect": { "ok": true, "codes": [] } },
+
+	{ "label": "Polygon: spans the antimeridian without splitting", "geometry": { "type": "Polygon", "coordinates": [[[-170, 0], [170, 0], [170, 10], [-170, 10], [-170, 0]]] }, "expect": { "ok": true, "codes": ["ANTIMERIDIAN_SPAN"] } },
+
+	{ "label": "MultiPolygon: valid", "geometry": { "type": "MultiPolygon", "coordinates": [[[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]], [[[5, 5], [6, 5], [6, 6], [5, 6], [5, 5]]]] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "MultiPolygon: second polygon clockwise", "geometry": { "type": "MultiPolygon", "coordinates": [[[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]], [[[5, 5], [5, 6], [6, 6], [6, 5], [5, 5]]]] }, "expect": { "ok": false, "codes": ["EXTERIOR_NOT_CCW"] } },
+	{ "label": "MultiPolygon: not nested deeply enough", "geometry": { "type": "MultiPolygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]] }, "expect": { "ok": false, "codes": ["BAD_POSITION"] } },
+
+	{ "label": "GeometryCollection: valid", "geometry": { "type": "GeometryCollection", "geometries": [{ "type": "Point", "coordinates": [0, 0] }, { "type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] }] }, "expect": { "ok": true, "codes": [] } },
+	{ "label": "GeometryCollection: bad member", "geometry": { "type": "GeometryCollection", "geometries": [{ "type": "Polygon", "coordinates": [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] }] }, "expect": { "ok": false, "codes": ["EXTERIOR_NOT_CCW"] } },
+	{ "label": "GeometryCollection: missing geometries", "geometry": { "type": "GeometryCollection" }, "expect": { "ok": false, "codes": ["MISSING_GEOMETRIES"] } }
+]

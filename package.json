@@ -1,0 +1,19 @@
+{
+	"name": "geojson-s2",
+	"version": "1.0.0",
+	"description": "Validate and repair GeoJSON geometry for Google S2 / ArangoDB. Zero dependencies.",
+	"main": "index.js",
+	"license": "MIT",
+	"files": [
+		"index.js",
+		"lib/",
+		"fixtures/",
+		"README.md"
+	],
+	"scripts": {
+		"test": "node test/run.js"
+	},
+	"engines": {
+		"node": ">=14"
+	}
+}
