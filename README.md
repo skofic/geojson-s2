@@ -62,6 +62,72 @@ Only fixes that are *forced* — where exactly one reading is possible, so nothi
 
 Idempotent, and never mutates its input. Self-intersection and hole containment are **not** repaired: they have no single correct interpretation. That is `make_valid`'s job, which is real computational geometry and stays in shapely — see `lib/geo_s2.py` in `metadata-external-databases`.
 
+## Using this from another project
+
+The package is deliberately self-contained: no dependencies, no Node built-ins, its own `package.json` and tests. Nothing about it is specific to the dictionary that currently hosts it.
+
+It lives inside `metadata-store` only because that is where it was proven. It is shaped so that moving it out is a mechanical operation, not a rewrite.
+
+### While it still lives here
+
+**Same repository** — require it by path, as `validator/shapes/geojson.js` does:
+
+```js
+const { validateGeometry } = require('../../packages/geojson-s2');
+```
+
+**Another local checkout** — a `file:` dependency keeps one copy on disk, so edits are picked up immediately with no publish step:
+
+```json
+{ "dependencies": { "geojson-s2": "file:../metadata-store/packages/geojson-s2" } }
+```
+
+Good for developing against it. Not good for deployment, since the path must exist on the target machine.
+
+**From an ESM project** (`"type": "module"`, as `metadata-external-databases` is) — named imports work directly, because `module.exports = { … }` is statically analysable:
+
+```js
+import { validateGeometry, repairGeometry } from 'geojson-s2';
+```
+
+**In a Foxx service** — bundle it into the service's `node_modules`. This is why the package is CommonJS with no Node built-ins: Foxx has neither ESM nor `fs`.
+
+### Extracting it to its own repository
+
+`npm install` **cannot** install a subdirectory of a git repository. So the moment a second project needs it as a real dependency rather than a path, the package has to become a repository root. `git subtree split` does that while keeping every commit that touched it:
+
+```bash
+# from the metadata-store checkout
+git subtree split --prefix=packages/geojson-s2 -b geojson-s2-export
+
+# create the new repository from that branch
+mkdir ../geojson-s2 && cd ../geojson-s2
+git init && git pull ../metadata-store geojson-s2-export
+git remote add origin https://github.com/skofic/geojson-s2.git
+git push -u origin main
+```
+
+Consumers then depend on it normally, pinned to a tag:
+
+```json
+{ "dependencies": { "geojson-s2": "github:skofic/geojson-s2#v1.0.0" } }
+```
+
+Nothing in the source changes. `validator/shapes/geojson.js` swaps its relative `require` for the package name, and `packages/geojson-s2/` is deleted from this repository.
+
+Two things to carry across at that point:
+
+- **`fixtures/corpus.json` goes with it.** It is listed in `package.json`'s `files`, so it ships to consumers rather than being a private test asset — that is what lets the Python module be held to the same expectations (see below).
+- **Deciding where it lives is a one-way door for `main`.** Splitting late is fine; splitting and then continuing to edit the copy here is not. Do the split when the second consumer arrives, not before.
+
+### Keeping the Python implementation honest
+
+`metadata-external-databases/lib/geo_s2.py` validates the same geometry using shapely. Two implementations across two runtimes is unavoidable — the dictionary validator cannot have shapely, and the ingestion pipeline should not lose `make_valid`.
+
+What stops them drifting into meaning different things is `fixtures/corpus.json`: a language-neutral list of `{ label, geometry, expect: { ok, codes } }`. The JS side runs it via `test/run.js`. The Python side should read the same file and assert the same verdicts, so a divergence fails a test rather than surfacing as two tools disagreeing about a customer's polygon.
+
+Until the package is extracted, the Python repo has no clean path to that file — which is the practical reason to extract once it is genuinely needed on both sides.
+
 ## Known limits
 
 - **Planar, not spherical.** Winding uses the shoelace formula on lon/lat, matching shapely's `is_ccw`. This is deliberate: the Python module in `metadata-external-databases` uses shapely, and matching its arithmetic is what lets the two agree on the shared corpus. It is wrong for polygons spanning more than half the globe, containing a pole, or crossing the antimeridian — the last of which is reported as `ANTIMERIDIAN_SPAN`.
