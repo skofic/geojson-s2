@@ -7,14 +7,17 @@
  * The corpus proves the checks accept what they should; this proves they REJECT
  * what they should, using real geometry rather than hand-drawn squares.
  *
- * Source geometry is read live from the dictionary — the two polygons on
- * `EXAMPLE_GEO-JSON_TEST._prop['EXAMPLE_GEO-JSON']`, a 14-vertex survey shape in
- * Scotland and its bounding rectangle. Both are genuinely clean: counter-
- * clockwise, closed, no repeated vertices. Every mutation below takes one of
- * them and introduces exactly one fault, then asserts the validator names it.
+ * Source geometry is `fixtures/mutate-base.json` — a snapshot of the two
+ * polygons on `EXAMPLE_GEO-JSON_TEST._prop['EXAMPLE_GEO-JSON']` in the
+ * metadata-store dictionary, a 14-vertex survey shape in Scotland and its
+ * bounding rectangle. Both are genuinely clean: counter-clockwise, closed, no
+ * repeated vertices. Every mutation below takes one of them and introduces
+ * exactly one fault, then asserts the validator names it.
  *
+ *   node test/mutate.js [--verbose] [--terms <path/to/terms.examples.json>]
  *
- *   node packages/geojson-s2/test/mutate.js [--verbose]
+ * `--terms` re-reads the polygons live from a dictionary source file instead of
+ * the snapshot (used to re-check after the dictionary example changes).
  */
 
 const fs   = require('fs');
@@ -22,15 +25,22 @@ const path = require('path');
 const { validateGeometry, repairGeometry } = require('../index');
 
 const verbose  = process.argv.includes('--verbose');
-const TERMS    = path.resolve(__dirname, '../../../data/examples/terms.examples.json');
+const termsArg = process.argv.indexOf('--terms');
+const TERMS    = termsArg !== -1 ? path.resolve(process.argv[termsArg + 1]) : null;
+const SNAPSHOT = path.join(__dirname, '..', 'fixtures', 'mutate-base.json');
 
 // ── Source geometry ──────────────────────────────────────────────────────────
 
 function loadExampleGeometries() {
-	const terms = JSON.parse(fs.readFileSync(TERMS, 'utf8'));
-	const term  = terms.find(t => t._code._gid === 'EXAMPLE_GEO-JSON_TEST');
-	if (!term) throw new Error('EXAMPLE_GEO-JSON_TEST not found in ' + TERMS);
-	const polys = (term._prop || {})['EXAMPLE_GEO-JSON'];
+	let polys;
+	if (TERMS) {
+		const terms = JSON.parse(fs.readFileSync(TERMS, 'utf8'));
+		const term  = terms.find(t => t._code._gid === 'EXAMPLE_GEO-JSON_TEST');
+		if (!term) throw new Error('EXAMPLE_GEO-JSON_TEST not found in ' + TERMS);
+		polys = (term._prop || {})['EXAMPLE_GEO-JSON'];
+	} else {
+		polys = JSON.parse(fs.readFileSync(SNAPSHOT, 'utf8')).geometries;
+	}
 	if (!Array.isArray(polys)) throw new Error('EXAMPLE_GEO-JSON_TEST has no polygons');
 	return polys.map((g, i) => ({ label: `EXAMPLE_GEO-JSON_TEST[${i}] (${g.coordinates[0].length} positions)`, geometry: g }));
 }

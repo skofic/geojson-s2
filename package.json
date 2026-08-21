@@ -4,6 +4,14 @@
 	"description": "Validate and repair GeoJSON geometry for Google S2 / ArangoDB. Zero dependencies.",
 	"main": "index.js",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/skofic/geojson-s2.git"
+	},
+	"bugs": {
+		"url": "https://github.com/skofic/geojson-s2/issues"
+	},
+	"homepage": "https://github.com/skofic/geojson-s2#readme",
 	"files": [
 		"index.js",
 		"lib/",
@@ -11,7 +19,7 @@
 		"README.md"
 	],
 	"scripts": {
-		"test": "node test/run.js"
+		"test": "node test/run.js && node test/mutate.js"
 	},
 	"engines": {
 		"node": ">=14"
