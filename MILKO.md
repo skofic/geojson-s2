@@ -1,5 +1,7 @@
 # geojson-s2 — maintainer notes
 
+**Cross-repository facts** (which server runs what, behind what): [`../shared/deployments.md`](../shared/deployments.md). Read it before assuming anything about a server; do not copy its content here.
+
 Validate and repair GeoJSON geometry for Google S2, the engine behind ArangoDB's geo index. Zero dependencies, CommonJS, no Node built-ins — runs in Node, in ArangoDB Foxx, and in the browser. `README.md` is the user-facing document (why it exists, severity model, usage); this file is about maintaining and releasing it.
 
 ## Provenance
